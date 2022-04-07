@@ -1,0 +1,23 @@
+# emacs temp files.
+*~
+
+# files starting with _ that are usually artifacts from my | tee _some_log.txt
+_*
+
+# Modelsim stuff
+transcript
+*.wlf
+work
+_tmp_vsim.tcl
+
+# Verilator stuff
+logs
+obj_dir
+generated_*.cpp
+
+# dsim stuff
+.aurora
+_download*
+
+# bazel genfiles, out, etc
+bazel-*
