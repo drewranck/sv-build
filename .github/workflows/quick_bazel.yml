@@ -19,16 +19,19 @@ jobs:
   test:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
+    
+    container:
+      image: drewranck/bazel_and_verilator:latest
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
       - uses: bazelbuild/setup-bazelisk@v2
-      - uses: docker://verilator/verilator:latest
-      - name: bazel test this repo
+      - name: Set up Bazel cache
         uses: actions/cache@v3
         with:
           path: "~/.cache/bazel"
           key: bazel
-      - run: bazel test //...      
+      - name: Bazel test the repo
+        run: bazel test //...      
