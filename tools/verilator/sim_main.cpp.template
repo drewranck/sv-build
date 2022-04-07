@@ -1,0 +1,137 @@
+// DESCRIPTION: Verilator: Verilog example module
+//
+// Template where you replace TBTOP (!! guards on string) with your
+// module name.
+//======================================================================
+
+// For std::unique_ptr
+#include <memory>
+
+// Include common routines
+#include <verilated.h>
+
+// Include model header, generated from Verilating our "top" .sv
+#include "V!!TBTOP!!.h"
+
+// Legacy function required only so linking works on Cygwin and MSVC++
+double sc_time_stamp() { return 0; }
+
+int main(int argc, char** argv, char** env) {
+    // This is a more complicated example, please also see the simpler examples/make_hello_c.
+
+    // Make sure our test completed AND passed. This makes sure the TB's
+    // .sv main actualy completed happily and $finished. If not, then
+    // something went wrong and the test wasn't run (but $finished anyway)
+    // TODO(drewranck): we probably want test hang detection too.
+    char test_passed;
+
+    const int time_prec_multiplier = 1000;
+
+
+    // Prevent unused variable warnings
+    if (false && argc && argv && env) {}
+
+    // Create logs/ directory in case we have traces to put under it
+    Verilated::mkdir("logs");
+
+    // There may be a more concise main loop example here, maybe worth refactoring:
+    // https://veripool.org/guide/latest/connecting.html
+
+    // Construct a VerilatedContext to hold simulation time, etc.
+    // Multiple modules (made later below with V!!TBTOP!!) may share the same
+    // context to share time, or modules may have different contexts if
+    // they should be independent from each other.
+
+    // Using unique_ptr is similar to
+    // "VerilatedContext* contextp = new VerilatedContext" then deleting at end.
+    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
+
+    // Set debug level, 0 is off, 9 is highest presently used
+    // May be overridden by commandArgs argument parsing
+    contextp->debug(0);
+
+    // Randomization reset policy
+    // May be overridden by commandArgs argument parsing
+    contextp->randReset(2);
+
+    // Verilator must compute traced signals
+    contextp->traceEverOn(true);
+
+    // Pass arguments so Verilated code can see them, e.g. $value$plusargs
+    // This needs to be called before you create any model
+    contextp->commandArgs(argc, argv);
+
+    // Construct the Verilated model, from V!!TBTOP!!.h generated from Verilating "top.v".
+    // Using unique_ptr is similar to "V!!TBTOP!!* top = new V!!TBTOP!!" then deleting at end.
+    // "!!TBTOP!!" (module top) will be the hierarchical name of the module.
+    const std::unique_ptr<V!!TBTOP!!> top{new V!!TBTOP!!{contextp.get(), "!!TBTOP!!"}};
+
+
+    // Turn off asserts to start.
+    Verilated::assertOn(false);
+
+    // Set V!!TBTOP!!'s input signals
+    top->rst = !1;
+    top->clk = 0;
+
+    // Simulate until $finish
+    while (!contextp->gotFinish()) {
+
+	contextp->timeInc(1 * time_prec_multiplier);  // 1 timeprecision period passes
+
+	// Toggle a fast (time/2 period) clock
+	top->clk = !top->clk;
+
+	// Toggle control signals on an edge that doesn't correspond
+	// to where the controls are sampled; in this example we do
+	// this only on a negedge of clk, because we know
+	// reset is not sampled there.
+
+	if (!top->clk) {
+	    if (contextp->time() > (1 * time_prec_multiplier) &&
+		contextp->time() < (10 * time_prec_multiplier)) {
+		top->rst = !0;  // Assert reset
+	    } else {
+		top->rst = !1;  // Deassert reset
+		Verilated::assertOn(true);
+	    }
+	}
+
+
+	// Evaluate model
+	// (If you have multiple models being simulated in the same
+	// timestep then instead of eval(), call eval_step() on each, then
+	// eval_end_step() on each. See the manual.)
+	top->eval();
+
+	// Read outputs
+	//VL_PRINTF("[%" PRId64 "] clk=%x rstl=%x \n",
+	//          contextp->time(), top->clk, top->rst);
+    }
+
+    // might be cool to check for errors and if top->test_passed?
+    VL_PRINTF("[%" PRId64 "] clk=%x rst=%x test_passed=%x\n",
+	      contextp->time(), top->clk, top->rst, top->test_passed);
+
+    test_passed = top->test_passed;
+
+
+    // Final model cleanup
+    top->final();
+
+    if (!test_passed) {
+	VL_PRINTF("[%" PRId64 "] test_passed=%x is not 1, returning non-zero.\n",
+		  contextp->time(), test_passed);
+	return 30;
+    }
+
+    // Coverage analysis (calling write only after the test is known to pass)
+#if VM_COVERAGE
+    Verilated::mkdir("logs");
+    contextp->coveragep()->write("logs/coverage.dat");
+#endif
+
+    // Return good completion status
+    // Don't use exit() or destructor won't get called
+    return 0;
+}
