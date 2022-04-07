@@ -137,7 +137,7 @@ module pipeline_test_verilator
     end
 
     kInReset: begin
-      // cycle will increment After reset, provided by dvm_clk_rst_test_passed.svh
+      // cycle will increment After reset
       if (rst == 0 && cycle >= 1) begin
         $display("%t %m: %s", $time,
                  $sformatf("start, Depth=%0d", Depth));
