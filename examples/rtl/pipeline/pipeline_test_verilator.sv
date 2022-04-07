@@ -247,14 +247,9 @@ module pipeline_test_verilator
 `ifdef VERILATOR
   initial begin : verilator_dump_wave
     if ($test$plusargs("trace")) begin
-      automatic int trace = 0;
-      $value$plusargs("trace=%0d", trace);
-      if (trace) begin
-        $display("%t: %m %s", $time,
-                 $sformatf("Tracing to logs/vlt_dump.vcd trace=%0d", trace));
-        $dumpfile("logs/vlt_dump.vcd");
-        $dumpvars();
-      end
+      $display("%t: %m Tracing to vlt_dump.vcd", $time);
+      $dumpfile("vlt_dump.vcd");
+      $dumpvars();
     end
   end
 `endif

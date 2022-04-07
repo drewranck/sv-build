@@ -141,23 +141,26 @@ echo "  TraceArg=$TraceArg"
 echo "  Seed=$Seed"
 echo "  RunArgs: $RunArgs"
 
-LogsWavesEcho="  Logs in: ${PWD}/${RunLog}"
+LogsWaves=
 if [[ "$TraceArg" != "" ]]; then
-    LogsWavesEcho=`echo "$LogsWavesEcho" && echo "  Waves would be in: ${PWD}/logs/vlt_dump.vcd"`
+    LogsWaves="  Waves would be in: ${PWD}/logs/vlt_dump.vcd"
 fi
 
 
 if [[ "$ExpectFail" == "True" || "$ExpectFail" == "1" ]]; then
 
+    # Using set -o pipefail so $? is propagated through the | tee command.
     set -o pipefail;
 
     ! ./$Cmd +verilator+seed+$Seed $TraceArg $RunArgs | tee $RunLog; \
 	echo $? && echo "Checking log $RunLog" && \
 	log_expect_fail $RunLog && \
 	echo "Good -- Expected test to fail and it did ($Cmd seed=$Seed)" && \
+	echo $LogsWaves && \
 	exit 0
 
     echo "Bad -- Expected test to fail, but it passed ($Cmd seed=$Seed)"
+    echo $LogsWaves
     exit 1
 
 fi
@@ -165,12 +168,13 @@ fi
 # Else expect it to pass:
 set -o pipefail;
 
-
 ./$Cmd +verilator+seed+$Seed $TraceArg $RunArgs | tee $RunLog; \
     echo $? && echo "Checking log $RunLog" && \
     log_expect_pass $RunLog && \
     echo "Good -- Expected test to pass and it did ($Cmd seed=$Seed)" && \
+    echo $LogsWaves && \
     exit 0
 
 echo "Bad -- Expected test to pass, but it failed ($Cmd seed=$Seed)"
+echo $LogsWaves
 exit 1
