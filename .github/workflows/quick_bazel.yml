@@ -21,17 +21,19 @@ jobs:
     runs-on: ubuntu-latest
     
     container:
+      # TODO(drewranck): there's probably a better way, but I had issues using
+      # verilator/verilator:latest as a container and then using actions for
+      # - uses: bazelbuild/setup-bazelisk@v2
+      # - uses: actions/cache@v3
+      # So instead, I'm uing my own container that has bazel and verilator in it,
+      # with an entrypoint to /bin/bash:
+      # Also we'll probably need to figure out why this container is missing zlib.h
+      # which prevents me from running verilator with --trace
       image: drewranck/bazel_plus_verilator:latest
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
-      #- uses: bazelbuild/setup-bazelisk@v2
-      - name: Set up Bazel cache
-        uses: actions/cache@v3
-        with:
-          path: "~/.cache/bazel"
-          key: bazel
       - name: Bazel test the repo
         run: bazel test //...      
