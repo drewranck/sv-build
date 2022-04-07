@@ -19,7 +19,9 @@ VERILATOR_FLAGS = {
         " -Wno-WIDTH",
         " -Wno-PINCONNECTEMPTY",
 
-        " --trace --trace-structs --trace-fst",
+        # TODO(drewranck): Apparently I forgot to include zlib.h on my docker image, so we can't
+        # get waves (for now)
+        #" --trace --trace-structs --trace-fst",
         " --assert",
         #" --coverage",
 
