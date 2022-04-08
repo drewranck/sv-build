@@ -1,9 +1,11 @@
 package(default_visibility = ["//examples:__subpackages__"])
 
-load("@sv_build//tools/bzl:sv-build.bzl", "sv_lint_test")
-load("@sv_build//tools/bzl:sv-build.bzl", "sv_library")
-load("@sv_build//tools/bzl:sv-build.bzl", "sv_glob_filegroup")
-load("@sv_build//tools/bzl:sv-build.bzl", "sv_verilator_test")
+load("@sv_build//tools:sv.bzl",
+     "sv_lint_test",
+     "sv_library",
+     "sv_glob_filegroup",
+     "sv_verilator_test",
+)
 
 load("@sv_build//tools/verilator:verilator.bzl", "sim_main_cpp_generator")
 

@@ -1,6 +1,9 @@
-load("@sv_build//tools/verilator:verilator.bzl", "VERILATOR_FLAGS")
-load("@sv_build//tools/verilator:verilator.bzl", "get_str_dotf_cmd_bash_verilator")
-load("@sv_build//tools/verilator:verilator.bzl", "sim_main_cpp_generator")
+load("@sv_build//tools/verilator:verilator.bzl",
+     "VERILATOR_FLAGS", "VERILATOR_WAVES_FLAGS",
+     "get_str_dotf_cmd_bash_verilator",
+     "sim_main_cpp_generator",
+     "collect_verilator_build_flags"
+)
 
 load("@bazel_skylib//lib:selects.bzl", "selects")
 
@@ -10,13 +13,21 @@ SV_SIMULATORS = [
     "modelsim_ase",
     #"modelsim", # same as Questa
     #"questa",
-    #"dsim",
+    #"irun",
+    #"vcs",
 ]
 
 
 # Some "select" shortnames for easier reading:
 kDEFAULT = "//conditions:default"
-kVERILATOR_DEBUG = "@sv_build//tools/bzl:cfg_verilator_debug"
+kVERILATOR_DEBUG = "@sv_build//tools/cfg:cfg_verilator_debug"
+
+def collect_build_flags(flags_dict={}, ext_flags=[], ext_defines=[]):
+    """Returns a list of strings that are args for a vlog/verilator test/genrule."""
+    # Only supporting Verilator for now
+    return collect_verilator_build_flags(flags_dict = flags_dict,
+                                         ext_flags = ext_flags,
+                                         ext_defines = ext_defines)
 
 
 
@@ -158,6 +169,7 @@ def sv_verilator_test(name, deps=[],
                       verilator_flags=[], run_flags=[],
                       seed=1,
                       defines=[], plusargs=[],
+                      waves=False,
                       expect_fail=False,
                       verilator_binary=None,
                       **kwargs):
@@ -178,6 +190,8 @@ def sv_verilator_test(name, deps=[],
                defines are used when running verilator (building the executable).
     plusargs -- list of SystemVerilog plusargs, such as [verbosity=500, ...]
                 plusargs are used when running the executable for simulation.
+    waves -- boolean, produce vlt_dump.vcd, adds build/defines/plusargs from
+             VERILATOR_WAVES_FLAGS.
     expect_fail -- boolean, set to True if you expect this test should fail.
     verilator_binary -- None, or a bazel target of an already verilated
                           executable from a sv_verilator_binary(..) rule.
@@ -198,6 +212,7 @@ def sv_verilator_test(name, deps=[],
                             seed = seed,
                             defines = defines,
                             plusargs = plusargs,
+                            waves = waves,
                             expect_fail = expect_fail,
                             verilator_binary = verilator_binary,
                             **kwargs)
@@ -208,6 +223,7 @@ def _sv_verilator_test_impl(name, deps, size, tags,
                             verilator_flags, run_flags,
                             seed,
                             defines, plusargs,
+                            waves,
                             expect_fail,
                             verilator_binary=None,
                             **kwargs):
@@ -224,6 +240,7 @@ def _sv_verilator_test_impl(name, deps, size, tags,
                                   deps = deps,
                                   verilator_flags = verilator_flags,
                                   defines = defines,
+                                  waves = waves,
                                   **kwargs)
 
         # Now we should have a binary:
@@ -238,6 +255,7 @@ def _sv_verilator_test_impl(name, deps, size, tags,
                                   size = size,
                                   seed = seed,
                                   plusargs = plusargs,
+                                  waves = waves,
                                   expect_fail = expect_fail,
                                   verilator_binary = verilator_binary,
                                   **kwargs)
@@ -248,6 +266,7 @@ def _sv_verilator_run_binary_impl(name, verilator_binary,
                                   tags=[],
                                   run_flags=[],
                                   seed=1, plusargs=[],
+                                  waves=False,
                                   expect_fail=False,
                                   **kwargs):
     """ Test target - private rule to run a verilated executable.
@@ -262,6 +281,7 @@ def _sv_verilator_run_binary_impl(name, verilator_binary,
     seed -- the simulation seed provided as an argument to verilated executable.
     plusargs -- list of SystemVerilog plusargs, such as [verbosity=500, ...]
                 plusargs are used when running the executable for simulation.
+    waves -- boolean, produce vlt_dump.vcd, adds plusargs from VERILATOR_WAVES_FLAGS.
     expect_fail -- boolean, set to True if you expect this test should fail.
 
     Note that the seed argument has special handling:
@@ -271,6 +291,9 @@ def _sv_verilator_run_binary_impl(name, verilator_binary,
     """
 
     runargs = VERILATOR_FLAGS["plusargs"] + run_flags
+
+    if waves:
+        runargs += VERILATOR_WAVES_FLAGS["plusargs"]
 
     sh_to_run = ["@sv_build//tools/verilator:bazel_verilator_run.sh"]
 
@@ -315,16 +338,17 @@ def _sv_verilator_run_binary_impl(name, verilator_binary,
 
 
 def sv_verilator_binary(name, top, cpp, deps, tags=[], verilator_flags=[],
-                        defines=[],
+                        defines=[], waves=False,
                         **kwargs):
     _sv_verilator_binary_impl(name = name, top = top, cpp = cpp, deps = deps,
                               tags = tags,
                               verilator_flags = verilator_flags,
                               defines = defines,
+                              waves = waves,
                               **kwargs)
 
 def _sv_verilator_binary_impl(name, deps, top, cpp, tags=[], verilator_flags=[],
-                              defines=[],
+                              defines=[], waves=False,
                               **kwargs):
     """ Build target - runs verilator to build an executable, does NOT run the exec.
 
@@ -337,6 +361,8 @@ def _sv_verilator_binary_impl(name, deps, top, cpp, tags=[], verilator_flags=[],
     verilator_flags -- list of args passed to verilator invocation.
     defines -- list of SystemVerilog defines, such as [CYC_TIMEOUT=1000, ...]
                defines are used when running verilator (building the executable).
+    waves -- boolean, produce vlt_dump.vcd, adds build/defines flags from
+             VERILATOR_WAVES_FLAGS.
 
     sv_verilator_binary is part of a 2-step flow, this will build the verilated exec
     """
@@ -371,10 +397,13 @@ def _sv_verilator_binary_impl(name, deps, top, cpp, tags=[], verilator_flags=[],
     # 1) the output binary, mybin
     # 2) a file with all the compile args -- all verilator args (in list myargs)
 
-    myargs_verilator = VERILATOR_FLAGS["build"] + verilator_flags
+    myargs_verilator = collect_build_flags(flags_dict = VERILATOR_FLAGS,
+                                           ext_flags = verilator_flags,
+                                           ext_defines = defines)
 
-    for d in VERILATOR_FLAGS["defines"] + defines:
-        myargs_verilator += [" +define+{}".format(d)]
+    if waves:
+        myargs_verilator += collect_build_flags(flags_dict = VERILATOR_WAVES_FLAGS)
+
 
     # we have to use $(execpath ...) on these locations b/c that's how
     # genrule uses them (different than a sh_test.. b/c bazel reasons).

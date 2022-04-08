@@ -20,7 +20,9 @@ VERILATOR_FLAGS = {
         " -Wno-PINCONNECTEMPTY",
 
         # TODO(drewranck): Apparently I forgot to include zlib.h on my docker image, so we can't
-        # get waves (for now)
+        # get waves by default (for now) in Github actions.
+        # workaround: need to use waves=True in sv_verilator_test(..) test macro, or
+        #             waves=True in sv_verilator_binary(..) build macro.
         #" --trace --trace-structs --trace-fst",
         " --assert",
         #" --coverage",
@@ -40,6 +42,25 @@ VERILATOR_FLAGS = {
     ],
     "plusargs": [],
     }
+
+VERILATOR_WAVES_FLAGS = {
+    "build": [
+        " --trace --trace-structs --trace-fst",
+    ],
+    "defines": [],
+    "plusargs": [
+        "+trace=1",
+    ],
+    }
+
+
+def collect_verilator_build_flags(flags_dict={}, ext_flags=[], ext_defines=[]):
+    """Returns a list of strings that are passed to verilator as args."""
+    ret = flags_dict["build"] + ext_flags
+    for d in flags_dict["defines"] + ext_defines:
+        ret += [" +define+{}".format(d)]
+
+    return ret
 
 
 def sim_main_cpp_generator(name, srcs,
