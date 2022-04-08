@@ -46,6 +46,15 @@ function log_expect_fail()
     [[ `grep -o "\%Error" $1` != "" ]]
 }
 
+function save_artifacts()
+{
+    cp $RunLog "$TEST_UNDECLARED_OUTPUTS_DIR/$RunLog" || true;
+    if [[ "$TraceArg" != "" ]]; then
+        cp vlt_dump.vcd "$TEST_UNDECLARED_OUTPUTS_DIR/vlt_dump.vcd" || \
+	    echo "Warning: Unable to copy waves, they may not exist!";
+    fi
+}
+
 if [[ $# -eq 0 ]] ; then
     echo "Missing first arg for <bin_exe>"
     exit 1
@@ -89,24 +98,24 @@ RunArgs=
 while [[ -n $1 ]]; do
     a=$1;
     case $a in
-	# These --rand_* args are not verilator args, they are added to support
-	# simulation seed randomization in bazel via bazel run (or bazel test) with
-	# --test_arg=--rand_sim_seed
+        # These --rand_* args are not verilator args, they are added to support
+        # simulation seed randomization in bazel via bazel run (or bazel test) with
+        # --test_arg=--rand_sim_seed
         --rand_sim_seed | --random_seed | --rand_seed)
-	    echo "-- leftover arg $a seen, setting Seed=random."
-	    Seed="random" ;;
-	# +verilator+seed+Number is a verilator arg, but we'd like to fish out the
-	# value for the logs, and then we'll re-add it to the $Cmd invocation
-	+verilator+seed+*)
-	    Seed=`echo $a | egrep -o "\+verilator\+seed\+[0-9]+" | egrep -o "[0-9]+"`
-	    echo "-- leftover arg +verilator+seed+ seen, setting Seed=$Seed."
-	    ;;
-	# +trace is a verilator arg, we "shift" it away and re-add it to the
-	# $Cmd invocation, used for this shell script to print out the
-	# waves location.
-	+trace*)
+            echo "-- leftover arg $a seen, setting Seed=random."
+            Seed="random" ;;
+        # +verilator+seed+Number is a verilator arg, but we'd like to fish out the
+        # value for the logs, and then we'll re-add it to the $Cmd invocation
+        +verilator+seed+*)
+            Seed=`echo $a | egrep -o "\+verilator\+seed\+[0-9]+" | egrep -o "[0-9]+"`
+            echo "-- leftover arg +verilator+seed+ seen, setting Seed=$Seed."
+            ;;
+        # +trace is a verilator arg, we "shift" it away and re-add it to the
+        # $Cmd invocation, used for this shell script to print out the
+        # waves location.
+        +trace*)
             TraceArg="+trace"
-	    ;;
+            ;;
         *)
             RunArgs+=("$a")
     esac
@@ -126,10 +135,10 @@ if [[ "$Seed" == "random" ]]; then
     # Verilator has this thing where (0 < seed < 2^31 (2147483648)), and since
     # the od call returns bytes, we'll divide-by-2 if the Seed is too big:
     if [ $Seed -gt 2147483647 ]; then
-	Seed=$((Seed / 2));
+        Seed=$((Seed / 2));
     fi
     if [ $Seed -eq 0 ]; then
-	Seed=1;
+        Seed=1;
     fi
 
 fi
@@ -142,8 +151,12 @@ echo "  Seed=$Seed"
 echo "  RunArgs: $RunArgs"
 
 if [[ "$TraceArg" != "" ]]; then
-    echo "  Waves will (might?) be in: ${PWD}/vlt_dump.vcd"
+    echo "  Waves will (might?) be in: outputs.zip"
     echo "  (if they aren't, try 'bazel run --test_output=all' instead of 'bazel test')"
+    echo "  See link in (WORKSPACE root)/bazel-testlogs/$TEST_BINARY/test.outputs/outputs.zip"
+    echo ""
+    echo "    How to get your WORKSPACE root (copy paste):"
+    echo ">      a=\$PWD; while [ ! -f \"WORKSPACE\" ]; do cd ..; if [[ \"\$PWD\" == \"/\" ]]; then echo \"WORKSPACE not found :(\"; cd \$a; fi; done; echo \"WORKSPACE -->\"; echo \"  \$PWD\"; cd \$a;"
 fi
 
 
@@ -153,10 +166,11 @@ if [[ "$ExpectFail" == "True" || "$ExpectFail" == "1" ]]; then
     set -o pipefail;
 
     ! ./$Cmd +verilator+seed+$Seed $TraceArg $RunArgs | tee $RunLog; \
-	echo $? && echo "Checking log $RunLog" && \
-	log_expect_fail $RunLog && \
-	echo "Good -- Expected test to fail and it did ($Cmd seed=$Seed)" && \
-	exit 0
+        echo $? && echo "Checking log $RunLog" && \
+        save_artifacts && \
+        log_expect_fail $RunLog && \
+        echo "Good -- Expected test to fail and it did ($Cmd seed=$Seed)" && \
+        exit 0
 
     echo "Bad -- Expected test to fail, but it passed ($Cmd seed=$Seed)"
     exit 1
@@ -168,6 +182,7 @@ set -o pipefail;
 
 ./$Cmd +verilator+seed+$Seed $TraceArg $RunArgs | tee $RunLog; \
     echo $? && echo "Checking log $RunLog" && \
+    save_artifacts && \
     log_expect_pass $RunLog && \
     echo "Good -- Expected test to pass and it did ($Cmd seed=$Seed)" && \
     exit 0
