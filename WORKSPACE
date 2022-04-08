@@ -1,3 +1,5 @@
+workspace(name = "sv_build")
+
 # Boilerplate from
 # https://github.com/bazelbuild/bazel-skylib/releases
 

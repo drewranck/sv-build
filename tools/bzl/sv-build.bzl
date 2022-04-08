@@ -1,6 +1,6 @@
-load("//tools/verilator:verilator.bzl", "VERILATOR_FLAGS")
-load("//tools/verilator:verilator.bzl", "get_str_dotf_cmd_bash_verilator")
-load("//tools/verilator:verilator.bzl", "sim_main_cpp_generator")
+load("@sv_build//tools/verilator:verilator.bzl", "VERILATOR_FLAGS")
+load("@sv_build//tools/verilator:verilator.bzl", "get_str_dotf_cmd_bash_verilator")
+load("@sv_build//tools/verilator:verilator.bzl", "sim_main_cpp_generator")
 
 load("@bazel_skylib//lib:selects.bzl", "selects")
 
@@ -16,7 +16,7 @@ SV_SIMULATORS = [
 
 # Some "select" shortnames for easier reading:
 kDEFAULT = "//conditions:default"
-kVERILATOR_DEBUG = "//tools/bzl:cfg_verilator_debug"
+kVERILATOR_DEBUG = "@sv_build//tools/bzl:cfg_verilator_debug"
 
 
 
@@ -55,7 +55,7 @@ def sv_gen_dot_f(name, srcs=[], deps=[], **kwargs):
     by a -y some/path of everywhere to look for .v, .sv, .vh, .svh files.
 
     The select statement has been tested for config_settings provided by
-    //tools/bzl:BUILD
+    @sv_build//bzl:BUILD
 
 
     """
@@ -142,8 +142,8 @@ def _sv_lint_test_impl(name, top, deps, lint_flags, tags, size, defines, **kwarg
             kVERILATOR_DEBUG: myargs_dbg_verilator,
             }),
         srcs = selects.with_or({
-            kDEFAULT: ["//tools/verilator:bazel_verilator_lint.sh"],
-            kVERILATOR_DEBUG: ["//tools/verilator:bazel_verilator_lint.sh"],
+            kDEFAULT: ["@sv_build//tools/verilator:bazel_verilator_lint.sh"],
+            kVERILATOR_DEBUG: ["@sv_build//tools/verilator:bazel_verilator_lint.sh"],
             }),
         deps = deps,
         data = [top, dot_f_target],
@@ -272,7 +272,7 @@ def _sv_verilator_run_binary_impl(name, verilator_binary,
 
     runargs = VERILATOR_FLAGS["plusargs"] + run_flags
 
-    sh_to_run = ["//tools/verilator:bazel_verilator_run.sh"]
+    sh_to_run = ["@sv_build//tools/verilator:bazel_verilator_run.sh"]
 
 
     if seed == "" or seed == 0 or seed == None:
@@ -358,7 +358,7 @@ def _sv_verilator_binary_impl(name, deps, top, cpp, tags=[], verilator_flags=[],
     #    sim_main_cpp_generator(
     #        name = cpp_name,
     #        srcs = [top],
-    #        template = "//tools/verilator:sim_main.cpp.template",
+    #        template = "@sv_build//tools/verilator:sim_main.cpp.template",
     #        )
 
     #    cpp = cpp_name
@@ -392,7 +392,7 @@ def _sv_verilator_binary_impl(name, deps, top, cpp, tags=[], verilator_flags=[],
     myargs_dbg_verilator_flat += " +define+VerilatorBinary_CfgDbgVerilator=Yes"
     myargs_dbg_verilator_flat += " --debug"
 
-    verilator_sh_to_run = ["//tools/verilator:bazel_verilator_binary.sh"]
+    verilator_sh_to_run = ["@sv_build//tools/verilator:bazel_verilator_binary.sh"]
 
     # Adding sv_sim_test here b/c we only gerate the binary on those.
     mytags = ["sv",
@@ -405,12 +405,12 @@ def _sv_verilator_binary_impl(name, deps, top, cpp, tags=[], verilator_flags=[],
         outs = [mybin],
         cmd_bash = selects.with_or({
             kDEFAULT:
-            "$(location //tools/verilator:bazel_verilator_binary.sh) "
+            "$(location @sv_build//tools/verilator:bazel_verilator_binary.sh) "
             + "$(execpath {}) {}".format(mybin,
                                          myargs_verilator_flat),
 
             kVERILATOR_DEBUG:
-            "$(location //tools/verilator:bazel_verilator_binary.sh) "
+            "$(location @sv_build//tools/verilator:bazel_verilator_binary.sh) "
             + "$(execpath {}) {}".format(mybin,
                                          myargs_dbg_verilator_flat),
             }),
