@@ -141,9 +141,9 @@ echo "  TraceArg=$TraceArg"
 echo "  Seed=$Seed"
 echo "  RunArgs: $RunArgs"
 
-LogsWaves=
 if [[ "$TraceArg" != "" ]]; then
-    LogsWaves="  Waves would be in: ${PWD}/logs/vlt_dump.vcd"
+    echo "  Waves will (might?) be in: ${PWD}/vlt_dump.vcd"
+    echo "  (if they aren't, try 'bazel run --test_output=all' instead of 'bazel test')"
 fi
 
 
@@ -156,11 +156,9 @@ if [[ "$ExpectFail" == "True" || "$ExpectFail" == "1" ]]; then
 	echo $? && echo "Checking log $RunLog" && \
 	log_expect_fail $RunLog && \
 	echo "Good -- Expected test to fail and it did ($Cmd seed=$Seed)" && \
-	echo $LogsWaves && \
 	exit 0
 
     echo "Bad -- Expected test to fail, but it passed ($Cmd seed=$Seed)"
-    echo $LogsWaves
     exit 1
 
 fi
@@ -172,9 +170,7 @@ set -o pipefail;
     echo $? && echo "Checking log $RunLog" && \
     log_expect_pass $RunLog && \
     echo "Good -- Expected test to pass and it did ($Cmd seed=$Seed)" && \
-    echo $LogsWaves && \
     exit 0
 
 echo "Bad -- Expected test to pass, but it failed ($Cmd seed=$Seed)"
-echo $LogsWaves
 exit 1
