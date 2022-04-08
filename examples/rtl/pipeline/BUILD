@@ -1,11 +1,11 @@
 package(default_visibility = ["//examples:__subpackages__"])
 
-load("//tools/bzl:sv-build.bzl", "sv_lint_test")
-load("//tools/bzl:sv-build.bzl", "sv_library")
-load("//tools/bzl:sv-build.bzl", "sv_glob_filegroup")
-load("//tools/bzl:sv-build.bzl", "sv_verilator_test")
+load("@sv_build//tools/bzl:sv-build.bzl", "sv_lint_test")
+load("@sv_build//tools/bzl:sv-build.bzl", "sv_library")
+load("@sv_build//tools/bzl:sv-build.bzl", "sv_glob_filegroup")
+load("@sv_build//tools/bzl:sv-build.bzl", "sv_verilator_test")
 
-load("//tools/verilator:verilator.bzl", "sim_main_cpp_generator")
+load("@sv_build//tools/verilator:verilator.bzl", "sim_main_cpp_generator")
 
 # Simple rule to make all our svh + sv + v source in a single dependency.
 sv_glob_filegroup(

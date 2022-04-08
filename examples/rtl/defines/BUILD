@@ -1,7 +1,7 @@
 package(default_visibility = ["//examples:__subpackages__"])
 
-load("//tools/bzl:sv-build.bzl", "sv_library")
-load("//tools/bzl:sv-build.bzl", "sv_glob_filegroup")
+load("@sv_build//tools/bzl:sv-build.bzl", "sv_library")
+load("@sv_build//tools/bzl:sv-build.bzl", "sv_glob_filegroup")
 
 # This is a very lazy way to say *.v, *.sv, *.vh, *.svh:
 sv_glob_filegroup(

@@ -1,5 +1,5 @@
 
-load("//tools/bzl:expand_template.bzl", "expand_template")
+load("@sv_build//tools/bzl:expand_template.bzl", "expand_template")
 
 VERILATOR_FLAGS = {
     "lint": [
@@ -43,7 +43,7 @@ VERILATOR_FLAGS = {
 
 
 def sim_main_cpp_generator(name, srcs,
-                           template="//tools/verilator:sim_main.cpp.template",
+                           template="@sv_build//tools/verilator:sim_main.cpp.template",
                            visibility=None):
     """ Build Target - generates a generated_{Module}_sim_main.cpp for Verilator.
 
