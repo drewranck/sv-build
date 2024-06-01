@@ -30,8 +30,6 @@ module pipeline
     end
   endgenerate
 
-  `undef _LOCAL_PIPELINE
-
 endmodule : pipeline
 
 `endif
